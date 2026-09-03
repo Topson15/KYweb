@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NAVBOX 后台</title>
+  <script>document.documentElement.setAttribute("data-theme", localStorage.getItem("navbox-theme") || "light");</script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/admin.css" />
+</head>
+<body>
+  <div class="admin-shell" style="padding:16px 0 40px" id="app"></div>
+  <div class="toast" id="toast"></div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let DATA = null;
+    let TAB = "sites";
+
+    function toast(t) {
+      const el = $("toast");
+      el.textContent = t;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 1800);
+    }
+
+    async function api(url, method, body) {
+      const res = await fetch(url, {
+        method: method || "GET",
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const data = await res.json().catch(() => ({ ok: false, error: "网络错误" }));
+      if (!res.ok || data.ok === false) throw new Error(data.error || "请求失败");
+      return data;
+    }
+
+    function nav() {
+      const items = [
+        ["dash", "总览"],
+        ["sites", "站点"],
+        ["featured", "供应"],
+        ["expose", "曝光"],
+        ["tools", "工具"],
+        ["settings", "设置"]
+      ];
+      return items.map(([id, label]) =>
+        `<a class="pill ${TAB===id?"active":""}" href="#" onclick="TAB='${id}';render();return false">${label}</a>`
+      ).join("");
+    }
+
+    function layout(inner) {
+      $("app").innerHTML = `
+        <div class="admin-hd">
+          <div>
+            <h1 style="font-size:22px">管理后台</h1>
+            <p class="muted">权重数字越大，前台排得越靠前。改完立刻生效。</p>
+          </div>
+          <div class="sec-actions">
+            <button class="ghost" type="button" onclick="document.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">主题</button>
+            <a class="ghost" href="/" target="_blank">看前台</a>
+            <button class="outline" type="button" onclick="logout()">退出</button>
+          </div>
+        </div>
+        <div class="admin-nav" style="margin-bottom:14px">${nav()}</div>
+        <section class="panel">${inner}</section>`;
+    }
+
+    function weightCell(key, item) {
+      return `<div class="weight-box">
+        <button class="ghost" type="button" onclick="chgWeight('${key}','${item.id}', ${(item.weight||0)-10})">-</button>
+        <input value="${item.weight||0}" onchange="chgWeight('${key}','${item.id}', this.value)">
+        <button class="ghost" type="button" onclick="chgWeight('${key}','${item.id}', ${(item.weight||0)+10})">+</button>
+      </div>`;
+    }
+
+    async function chgWeight(key, id, weight) {
+      await api("/api/admin/weight", "PUT", { key, id, weight: Number(weight) });
+      toast("权重已更新");
+      await reload();
+    }
+    window.chgWeight = chgWeight;
+
+    async function saveItem(key, item) {
+      await api("/api/admin/" + key, "POST", item);
+      toast("已保存");
+      await reload();
+    }
+    window.saveItem = saveItem;
+
+    async function delItem(key, id) {
+      if (!confirm("确定删除？")) return;
+      await api("/api/admin/" + key + "/" + id, "DELETE");
+      toast("已删除");
+      await reload();
+    }
+    window.delItem = delItem;
+
+    function siteForm(item) {
+      const it = item || { id: "", name: "", url: "", tab: DATA.tabs[1] || "工具站", tags: [], desc: "", badge: "", weight: 50, status: "on" };
+      const tagStr = (it.tags || []).join(",");
+      return `<form class="form" onsubmit="event.preventDefault();saveItem('sites', Object.fromEntries(new FormData(this)))">
+        <input type="hidden" name="id" value="${it.id||""}">
+        <div class="form-row">
+          <label>名称<input name="name" value="${it.name||""}" required></label>
+          <label>网址<input name="url" value="${it.url||""}" required></label>
+        </div>
+        <div class="form-row">
+          <label>分类<select name="tab">${DATA.tabs.map(t => `<option ${t===it.tab?"selected":""}>${t}</option>`).join("")}</select></label>
+          <label>标签（逗号分隔）<input name="tags" value="${tagStr}"></label>
+        </div>
+        <div class="form-row">
+          <label>角标<input name="badge" value="${it.badge||""}" placeholder="热门 / 新 / 推荐"></label>
+          <label>权重<input name="weight" type="number" value="${it.weight||0}"></label>
+        </div>
+        <label>简介<textarea name="desc">${it.desc||""}</textarea></label>
+        <label>状态<select name="status"><option value="on" ${it.status!=="off"?"selected":""}>上架</option><option value="off" ${it.status==="off"?"selected":""}>下架</option></select></label>
+        <div class="sec-actions"><button class="solid" type="submit">保存站点</button></div>
+      </form>`;
+    }
+
+    function renderDash() {
+      layout(`
+        <div class="stat-row">
+          <div class="stat">站点<b>${DATA.sites.length}</b></div>
+          <div class="stat">供应<b>${DATA.featured.length}</b></div>
+          <div class="stat">曝光<b>${DATA.expose.length}</b></div>
+          <div class="stat">工具<b>${DATA.tools.length}</b></div>
+        </div>
+        <p class="note" style="margin-top:16px">使用顺序：先到「设置」改站名 → 到「站点」添加网址并设权重 → 打开前台查看排序。</p>
+        <p class="muted">默认账号 admin，初始密码 navbox888。请到设置里改密码。</p>`);
+    }
+
+    function renderSites() {
+      const rows = DATA.sites.map(s => `<tr>
+        <td><b>${s.name}</b><div class="muted">${s.url}</div></td>
+        <td>${s.tab}</td>
+        <td>${s.badge||"-"}</td>
+        <td>${s.status==="off"?"下架":"上架"}</td>
+        <td>${weightCell("sites", s)}</td>
+        <td>
+          <button class="ghost" type="button" onclick='editSite(${JSON.stringify(s).replace(/'/g,"&#39;")})'>编辑</button>
+          <button class="ghost" type="button" onclick="delItem('sites','${s.id}')">删除</button>
+        </td>
+      </tr>`).join("");
+      layout(`
+        <div class="sec-hd"><h2>站点列表</h2><button class="solid" type="button" onclick="editSite(null)">新增站点</button></div>
+        <div id="editBox"></div>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>名称 / 网址</th><th>分类</th><th>角标</th><th>状态</th><th class="w120">权重</th><th>操作</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="6">还没有站点</td></tr>'}</tbody>
+        </table></div>`);
+    }
+    window.editSite = function (item) {
+      $("editBox").innerHTML = '<div class="block" style="margin-bottom:16px">' + siteForm(item) + "</div>";
+    };
+
+    function genericTable(key, cols, formBuilder) {
+      const rows = (DATA[key] || []).map(item => `<tr>
+        ${cols.map(c => `<td>${item[c] || ""}</td>`).join("")}
+        <td>${item.status==="off"?"下架":"上架"}</td>
+        <td>${weightCell(key, item)}</td>
+        <td>
+          <button class="ghost" type="button" onclick='openForm(${JSON.stringify(item).replace(/'/g,"&#39;")})'>编辑</button>
+          <button class="ghost" type="button" onclick="delItem('${key}','${item.id}')">删除</button>
+        </td>
+      </tr>`).join("");
+      layout(`
+        <div class="sec-hd"><h2>${key}</h2><button class="solid" type="button" onclick="openForm(null)">新增</button></div>
+        <div id="editBox"></div>
+        <div class="table-wrap"><table class="data">
+          <thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}<th>状态</th><th>权重</th><th>操作</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="8">暂无数据</td></tr>'}</tbody>
+        </table></div>`);
+      window.openForm = function (item) {
+        $("editBox").innerHTML = '<div class="block" style="margin-bottom:16px">' + formBuilder(item) + "</div>";
+      };
+    }
+
+    function renderFeatured() {
+      genericTable("featured", ["title", "cat", "contact", "until"], function (item) {
+        const it = item || { title: "", cat: "", contact: "", until: "", desc: "", time: "", weight: 50, status: "on" };
+        return `<form class="form" onsubmit="event.preventDefault();saveItem('featured', Object.fromEntries(new FormData(this)))">
+          <input type="hidden" name="id" value="${it.id||""}">
+          <div class="form-row"><label>标题<input name="title" value="${it.title||""}" required></label><label>分类<input name="cat" value="${it.cat||""}"></label></div>
+          <div class="form-row"><label>联系方式<input name="contact" value="${it.contact||""}"></label><label>有效期<input name="until" value="${it.until||""}"></label></div>
+          <div class="form-row"><label>权重<input name="weight" type="number" value="${it.weight||0}"></label><label>状态<select name="status"><option value="on">上架</option><option value="off" ${it.status==="off"?"selected":""}>下架</option></select></label></div>
+          <label>说明<textarea name="desc">${it.desc||""}</textarea></label>
+          <button class="solid" type="submit">保存</button>
+        </form>`;
+      });
+    }
+
+    function renderExpose() {
+      genericTable("expose", ["when", "title", "level"], function (item) {
+        const it = item || { when: "", title: "", level: "提示", body: "", weight: 50, status: "on" };
+        return `<form class="form" onsubmit="event.preventDefault();saveItem('expose', Object.fromEntries(new FormData(this)))">
+          <input type="hidden" name="id" value="${it.id||""}">
+          <div class="form-row"><label>日期<input name="when" value="${it.when||""}"></label><label>级别<input name="level" value="${it.level||""}"></label></div>
+          <label>标题<input name="title" value="${it.title||""}" required></label>
+          <label>内容<textarea name="body">${it.body||""}</textarea></label>
+          <div class="form-row"><label>权重<input name="weight" type="number" value="${it.weight||0}"></label><label>状态<select name="status"><option value="on">上架</option><option value="off" ${it.status==="off"?"selected":""}>下架</option></select></label></div>
+          <button class="solid" type="submit">保存</button>
+        </form>`;
+      });
+    }
+
+    function renderTools() {
+      genericTable("tools", ["name", "href"], function (item) {
+        const it = item || { name: "", href: "/", desc: "", weight: 50, status: "on" };
+        return `<form class="form" onsubmit="event.preventDefault();saveItem('tools', Object.fromEntries(new FormData(this)))">
+          <input type="hidden" name="id" value="${it.id||""}">
+          <div class="form-row"><label>名称<input name="name" value="${it.name||""}" required></label><label>链接<input name="href" value="${it.href||""}"></label></div>
+          <label>说明<textarea name="desc">${it.desc||""}</textarea></label>
+          <div class="form-row"><label>权重<input name="weight" type="number" value="${it.weight||0}"></label><label>状态<select name="status"><option value="on">上架</option><option value="off" ${it.status==="off"?"selected":""}>下架</option></select></label></div>
+          <button class="solid" type="submit">保存</button>
+        </form>`;
+      });
+    }
+
+    function renderSettings() {
+      const s = DATA.settings;
+      layout(`
+        <h2 style="margin-bottom:12px">站点设置</h2>
+        <form class="form" onsubmit="event.preventDefault();saveSettings(this)">
+          <div class="form-row"><label>站名<input name="name" value="${s.name||""}"></label><label>入口域名<input name="home" value="${s.home||""}"></label></div>
+          <label>口号<input name="slogan" value="${s.slogan||""}"></label>
+          <label>前台提示<textarea name="noticeHtml">${s.noticeHtml||""}</textarea></label>
+          <label>分类 Tab（一行一个）<textarea name="tabs">${(DATA.tabs||[]).join("\n")}</textarea></label>
+          <label>标签（一行一个）<textarea name="tags">${(DATA.tags||[]).join("\n")}</textarea></label>
+          <button class="solid" type="submit">保存设置</button>
+        </form>
+        <hr style="margin:24px 0;border:0;border-top:1px solid var(--line)">
+        <h2 style="margin-bottom:12px">改密码</h2>
+        <form class="form" onsubmit="event.preventDefault();savePass(this)">
+          <div class="form-row"><label>后台账号<input name="username" value="${DATA.adminUser||"admin"}"></label><label>新密码<input name="password" type="password" required></label></div>
+          <button class="solid" type="submit">更新账号密码</button>
+        </form>
+        <hr style="margin:24px 0;border:0;border-top:1px solid var(--line)">
+        <h2 style="margin-bottom:12px">备份</h2>
+        <div class="sec-actions">
+          <a class="ghost" href="/api/admin/export">下载备份 JSON</a>
+        </div>
+        <p class="muted" style="margin-top:10px">导入请用下面文本框粘贴完整备份后点恢复。</p>
+        <form class="form" onsubmit="event.preventDefault();restoreBackup(this)">
+          <label>备份内容<textarea name="raw" placeholder='{"settings":...}'></textarea></label>
+          <button class="outline" type="submit">从 JSON 恢复</button>
+        </form>`);
+    }
+
+    window.saveSettings = async function (form) {
+      const fd = new FormData(form);
+      await api("/api/admin/settings", "PUT", {
+        settings: { name: fd.get("name"), home: fd.get("home"), slogan: fd.get("slogan"), noticeHtml: fd.get("noticeHtml") },
+        tabs: String(fd.get("tabs") || "").split(/\n/).map(s => s.trim()).filter(Boolean),
+        tags: String(fd.get("tags") || "").split(/\n/).map(s => s.trim()).filter(Boolean)
+      });
+      toast("设置已保存");
+      await reload();
+    };
+    window.savePass = async function (form) {
+      const fd = new FormData(form);
+      await api("/api/admin/password", "PUT", { username: fd.get("username"), password: fd.get("password") });
+      toast("密码已更新");
+    };
+    window.restoreBackup = async function (form) {
+      const raw = new FormData(form).get("raw");
+      const json = JSON.parse(raw);
+      await api("/api/admin/import", "POST", json);
+      toast("已恢复");
+      await reload();
+    };
+
+    async function logout() {
+      await api("/api/logout", "POST", {});
+      location.reload();
+    }
+    window.logout = logout;
+
+    function renderLogin() {
+      $("app").innerHTML = `<div class="login-card">
+        <h1>后台登录</h1>
+        <p class="muted">默认账号 admin，初始密码 navbox888。登录后请改密码。</p>
+        <form class="form" style="margin-top:16px" onsubmit="event.preventDefault();doLogin(this)">
+          <label>账号<input name="username" value="admin" required></label>
+          <label>密码<input name="password" type="password" required></label>
+          <button class="solid" type="submit">进入后台</button>
+        </form>
+        <p class="muted" style="margin-top:12px"><a href="/">返回前台</a></p>
+      </div>`;
+    }
+    window.doLogin = async function (form) {
+      const fd = new FormData(form);
+      try {
+        await api("/api/login", "POST", { username: fd.get("username"), password: fd.get("password") });
+        await reload();
+      } catch (e) { toast(e.message); }
+    };
+
+    async function reload() {
+      const me = await fetch("/api/me").then(r => r.json());
+      if (!me.admin) { renderLogin(); return; }
+      DATA = await api("/api/admin/all");
+      render();
+    }
+
+    function render() {
+      if (TAB === "dash") renderDash();
+      else if (TAB === "sites") renderSites();
+      else if (TAB === "featured") renderFeatured();
+      else if (TAB === "expose") renderExpose();
+      else if (TAB === "tools") renderTools();
+      else renderSettings();
+    }
+    window.render = render;
+    reload().catch(() => renderLogin());
+  </script>
+</body>
+</html>
