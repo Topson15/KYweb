@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}搜索 {{ q }}{% endblock %}
+{% block body %}
+<section class="panel">
+  <h1>搜索结果：{{ q or '空' }}</h1>
+  {% for item in listings %}
+    <a class="row" href="{{ url_for('item_detail', item_id=item.id) }}">
+      <span>{{ item.title }}</span><em>{{ item.cat_name }}</em>
+    </a>
+  {% else %}
+    <p class="empty">没有匹配条目</p>
+  {% endfor %}
+</section>
+{% endblock %}

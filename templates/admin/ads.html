@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% block body %}
+<h1>广告位</h1>
+<form method="post" class="form">
+  <label>标题 <input name="title" required></label>
+  <label>图片 URL <input name="image_url" required placeholder="https://..."></label>
+  <label>跳转链接 <input name="link_url"></label>
+  <label>位置
+    <select name="position">
+      <option value="home_banner">首页横幅</option>
+      <option value="sidebar">侧栏</option>
+    </select>
+  </label>
+  <label>排序 <input type="number" name="sort_order" value="0"></label>
+  <label><input type="checkbox" name="active" checked> 启用</label>
+  <button class="btn" type="submit">添加广告</button>
+</form>
+<table>
+  <tr><th>ID</th><th>标题</th><th>位置</th><th>状态</th><th></th></tr>
+  {% for r in rows %}
+  <tr>
+    <td>{{ r.id }}</td><td>{{ r.title }}</td><td>{{ r.position }}</td>
+    <td>{{ '开' if r.active else '关' }}</td>
+    <td class="ops">
+      <form method="post" action="{{ url_for('admin_ad_toggle', aid=r.id) }}"><button>开关</button></form>
+      <form method="post" action="{{ url_for('admin_ad_delete', aid=r.id) }}"><button>删</button></form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

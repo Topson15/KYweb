@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ settings.get('site_name','收录站') }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="logo">收</div>
+        <div>
+          <strong>{{ settings.get('site_name','收录站 Demo') }}</strong>
+          <p>{{ settings.get('site_tagline','让好资源被长期看见') }}</p>
+        </div>
+      </div>
+      <nav class="tabs">
+        {% for p in nav_parents %}
+          <a class="tab" href="{{ url_for('category', slug=p.slug) }}">{{ p.name }}</a>
+        {% endfor %}
+      </nav>
+      <div class="actions">
+        <form class="search" action="{{ url_for('search') }}">
+          <input name="q" placeholder="搜索收录...">
+        </form>
+        <a class="btn ghost" href="{{ url_for('submit') }}">申请收录</a>
+        {% if user %}
+          {% if user.role == 'admin' %}<a class="btn" href="{{ url_for('admin_home') }}">后台</a>{% endif %}
+          <a class="btn ghost" href="{{ url_for('logout') }}">退出 {{ user.username }}</a>
+        {% else %}
+          <a class="btn ghost" href="{{ url_for('login') }}">登录</a>
+          <a class="btn" href="{{ url_for('register') }}">注册</a>
+        {% endif %}
+      </div>
+    </header>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block body %}{% endblock %}
+    <footer class="foot">演示站 · 动态 Flask + SQLite · 默认管理员 admin / admin123</footer>
+  </div>
+</body>
+</html>

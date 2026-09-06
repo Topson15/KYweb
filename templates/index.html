@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="banners">
+  {% for ad in banners %}
+    <a class="banner" href="{{ ad.link_url }}"><img src="{{ ad.image_url }}" alt="{{ ad.title }}"></a>
+  {% endfor %}
+</section>
+<p class="disclaimer">此处为付费展示位，不对交易结果负责。供需请走审核流程。</p>
+
+<section class="grid4">
+  {% for item in featured %}
+    <article class="card">
+      <div class="card-h">
+        <div class="thumb">{{ item.title[:1] }}</div>
+        <div>
+          <a href="{{ url_for('item_detail', item_id=item.id) }}"><strong>{{ item.title }}</strong></a>
+          <p class="meta">分类：{{ item.cat_name or '未分组' }} · {{ item.kind }}
+            {% if item.expire_at %} · 有效至 {{ item.expire_at }}{% endif %}</p>
+        </div>
+        <span class="tag">{{ '供应' if item.kind=='supply' else '需求' }}</span>
+      </div>
+      <p class="sum">{{ item.summary }}</p>
+      <a class="more" href="{{ url_for('item_detail', item_id=item.id) }}">显示更多</a>
+      <time>{{ item.created_at }}</time>
+    </article>
+  {% endfor %}
+</section>
+
+<section class="panel">
+  <div class="panel-h">
+    <h2>{{ tools_parent.name if tools_parent else '分类浏览' }}</h2>
+    <div>
+      <a class="btn ghost" href="{{ url_for('submit') }}">申请收录</a>
+    </div>
+  </div>
+  {% if current_cat and current_cat.intro %}
+    <div class="intro">{{ current_cat.intro }}</div>
+  {% endif %}
+  <div class="subtabs">
+    {% for c in tool_cats %}
+      <a class="subtab {% if current_cat and c.id==current_cat.id %}on{% endif %}"
+         href="{{ url_for('index', cat=c.slug) }}">{{ c.name }}</a>
+    {% endfor %}
+  </div>
+  <div class="chips">
+    {% for p, kids in nav_children.items() %}
+      {% for c in kids %}
+        <a class="chip" href="{{ url_for('category', slug=c.slug) }}">{{ c.name }}</a>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  <div class="list">
+    {% for item in tool_listings %}
+      <a class="row" href="{{ url_for('item_detail', item_id=item.id) }}">
+        <span>{{ item.title }}</span>
+        <em>{{ item.cat_name }}</em>
+      </a>
+    {% else %}
+      <p class="empty">该二级分类暂无已审核条目。</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

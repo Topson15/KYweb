@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}申请收录{% endblock %}
+{% block body %}
+<section class="panel form">
+  <h1>发布供需 / 申请收录</h1>
+  <form method="post">
+    <label>标题 <input name="title" required></label>
+    <label>类型
+      <select name="kind">
+        <option value="supply">供应</option>
+        <option value="demand">需求</option>
+        <option value="coop">合作</option>
+        <option value="report">曝光</option>
+      </select>
+    </label>
+    <label>二级分类
+      <select name="category_id">
+        {% for c in cats %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>摘要 <input name="summary"></label>
+    <label>详情 <textarea name="body" rows="6"></textarea></label>
+    <label>联系方式 <input name="contact" placeholder="@xxx"></label>
+    <label>官网 <input name="website"></label>
+    <label>有效期 <input type="date" name="expire_at"></label>
+    <button class="btn" type="submit">提交审核</button>
+  </form>
+</section>
+{% endblock %}

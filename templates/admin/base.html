@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>后台 · {{ settings.get('site_name') }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="admin">
+  <aside>
+    <strong>后台</strong>
+    <a href="{{ url_for('admin_home') }}">总览</a>
+    <a href="{{ url_for('admin_listings') }}">收录审核</a>
+    <a href="{{ url_for('admin_categories') }}">分类介绍</a>
+    <a href="{{ url_for('admin_ads') }}">广告位</a>
+    <a href="{{ url_for('admin_notices') }}">公告</a>
+    <a href="{{ url_for('admin_settings') }}">站点设置</a>
+    <a href="{{ url_for('index') }}">回前台</a>
+  </aside>
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+    {% block body %}{% endblock %}
+  </main>
+</body>
+</html>

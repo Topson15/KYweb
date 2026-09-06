@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}注册{% endblock %}
+{% block body %}
+<section class="panel form narrow">
+  <h1>注册</h1>
+  <form method="post">
+    <label>用户名 <input name="username" required></label>
+    <label>密码 <input type="password" name="password" required></label>
+    <label>联系方式 <input name="contact"></label>
+    <button class="btn" type="submit">创建账号</button>
+  </form>
+</section>
+{% endblock %}

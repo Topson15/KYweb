@@ -1,0 +1,28 @@
+{% extends "admin/base.html" %}
+{% block body %}
+<h1>收录管理</h1>
+<p>
+  <a href="?status=all">全部</a> ·
+  <a href="?status=pending">待审</a> ·
+  <a href="?status=approved">已通过</a> ·
+  <a href="?status=rejected">已拒</a>
+</p>
+<table>
+  <tr><th>ID</th><th>标题</th><th>分类</th><th>状态</th><th>置顶</th><th>操作</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td>{{ r.id }}</td>
+    <td>{{ r.title }}</td>
+    <td>{{ r.cat_name }}</td>
+    <td>{{ r.status }}</td>
+    <td>{{ '是' if r.featured else '否' }}</td>
+    <td class="ops">
+      <form method="post" action="{{ url_for('admin_listing_action', item_id=r.id, action='approve') }}"><button>过</button></form>
+      <form method="post" action="{{ url_for('admin_listing_action', item_id=r.id, action='reject') }}"><button>拒</button></form>
+      <form method="post" action="{{ url_for('admin_listing_action', item_id=r.id, action='feature') }}"><button>顶</button></form>
+      <form method="post" action="{{ url_for('admin_listing_action', item_id=r.id, action='delete') }}"><button>删</button></form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

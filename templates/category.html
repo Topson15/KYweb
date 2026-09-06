@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ cat.name }} · {{ settings.get('site_name') }}{% endblock %}
+{% block body %}
+<section class="panel">
+  <p class="crumb">
+    <a href="{{ url_for('index') }}">首页</a>
+    {% if parent %} / <a href="{{ url_for('category', slug=parent.slug) }}">{{ parent.name }}</a>{% endif %}
+    / {{ cat.name }}
+  </p>
+  <h1>{{ cat.name }}</h1>
+  <div class="intro">{{ cat.intro or '该分类暂无介绍，可在后台编辑二级分类介绍。' }}</div>
+  {% if children %}
+    <div class="chips">
+      {% for c in children %}
+        <a class="chip" href="{{ url_for('category', slug=c.slug) }}">{{ c.name }}</a>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <div class="grid4" style="margin-top:16px">
+    {% for item in listings %}
+      <article class="card">
+        <div class="card-h">
+          <div class="thumb">{{ item.title[:1] }}</div>
+          <div>
+            <a href="{{ url_for('item_detail', item_id=item.id) }}"><strong>{{ item.title }}</strong></a>
+            <p class="meta">{{ item.cat_name }} · {{ item.kind }}</p>
+          </div>
+        </div>
+        <p class="sum">{{ item.summary }}</p>
+      </article>
+    {% else %}
+      <p class="empty">暂无内容</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

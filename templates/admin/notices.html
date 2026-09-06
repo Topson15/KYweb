@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+{% block body %}
+<h1>公告</h1>
+<form method="post" class="form">
+  <label>标题 <input name="title" required></label>
+  <label>正文 <textarea name="body" rows="6" required></textarea></label>
+  <button class="btn" type="submit">发布</button>
+</form>
+{% for r in rows %}
+  <article class="card"><strong>{{ r.title }}</strong><p>{{ r.body }}</p></article>
+{% endfor %}
+{% endblock %}

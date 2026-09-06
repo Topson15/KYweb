@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block body %}
+<article class="panel article">
+  <p class="crumb"><a href="{{ url_for('index') }}">首页</a> / <a href="{{ url_for('category', slug=item.cat_slug) }}">{{ item.cat_name }}</a></p>
+  <h1>{{ item.title }}</h1>
+  <p class="meta">{{ item.kind }} · 联系 {{ item.contact or '未填写' }}
+    {% if item.website %} · <a href="{{ item.website }}">官网</a>{% endif %}
+    {% if item.expire_at %} · 有效至 {{ item.expire_at }}{% endif %}
+  </p>
+  <p class="sum">{{ item.summary }}</p>
+  <div class="body">{{ item.body | replace('\n','<br>') | safe }}</div>
+</article>
+{% endblock %}

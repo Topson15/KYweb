@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% block body %}
+<h1>总览</h1>
+<div class="stats">
+  <div>用户 {{ stats.users }}</div>
+  <div>条目 {{ stats.listings }}</div>
+  <div>待审 {{ stats.pending }}</div>
+  <div>广告 {{ stats.ads }}</div>
+</div>
+<h2>待审核</h2>
+{% for p in pending %}
+  <div class="row">
+    <span>{{ p.title }}</span>
+    <form method="post" action="{{ url_for('admin_listing_action', item_id=p.id, action='approve') }}"><button>通过</button></form>
+    <form method="post" action="{{ url_for('admin_listing_action', item_id=p.id, action='reject') }}"><button>拒绝</button></form>
+  </div>
+{% else %}
+  <p class="empty">没有待审条目</p>
+{% endfor %}
+{% endblock %}
