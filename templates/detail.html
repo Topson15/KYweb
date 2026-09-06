@@ -4,11 +4,23 @@
 <article class="panel article">
   <p class="crumb"><a href="{{ url_for('index') }}">首页</a> / <a href="{{ url_for('category', slug=item.cat_slug) }}">{{ item.cat_name }}</a></p>
   <h1>{{ item.title }}</h1>
-  <p class="meta">{{ item.kind }} · 联系 {{ item.contact or '未填写' }}
-    {% if item.website %} · <a href="{{ item.website }}">官网</a>{% endif %}
+  <p class="meta">
+    类型 {{ item.kind }} · 联系 {{ item.contact or '未公开' }}
+    {% if item.website %} · <a href="{{ item.website }}" rel="nofollow">官网</a>{% endif %}
     {% if item.expire_at %} · 有效至 {{ item.expire_at }}{% endif %}
   </p>
-  <p class="sum">{{ item.summary }}</p>
-  <div class="body">{{ item.body | replace('\n','<br>') | safe }}</div>
+  <p class="sum lead">{{ item.summary }}</p>
+  <div class="body">{{ item.body }}</div>
+  <p class="hint">联系前请自行核验身份与合同。本站不对交易结果负责。</p>
 </article>
+{% if related %}
+<section class="panel">
+  <h2>同类条目</h2>
+  <div class="grid4">
+    {% for item in related %}
+      {% include "partials/card.html" %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endblock %}

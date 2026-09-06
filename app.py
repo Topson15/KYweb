@@ -112,14 +112,15 @@ def init_db():
 
 def seed(db):
     now = datetime.utcnow().isoformat(timespec="seconds")
-    db.execute(
-        "INSERT INTO users(username,password_hash,role,contact,created_at) VALUES(?,?,?,?,?)",
-        ("admin", generate_password_hash("admin123"), "admin", "@admin", now),
-    )
-    db.execute(
-        "INSERT INTO users(username,password_hash,role,contact,created_at) VALUES(?,?,?,?,?)",
-        ("demo", generate_password_hash("demo123"), "user", "@demo", now),
-    )
+    if db.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
+        db.execute(
+            "INSERT INTO users(username,password_hash,role,contact,created_at) VALUES(?,?,?,?,?)",
+            ("admin", generate_password_hash("admin123"), "admin", "@admin", now),
+        )
+        db.execute(
+            "INSERT INTO users(username,password_hash,role,contact,created_at) VALUES(?,?,?,?,?)",
+            ("demo", generate_password_hash("demo123"), "user", "@demo", now),
+        )
     parents = [
         (None, "工具合集", "tools", "收录经人工筛选的效率工具与开放平台，注意甄别风险。", 1),
         (None, "供需资源", "demand", "发布合法的供应与需求信息，需审核后展示。", 2),
@@ -133,18 +134,24 @@ def seed(db):
         )
     parent_ids = {r["slug"]: r["id"] for r in db.execute("SELECT id,slug FROM categories")}
     children = [
-        ("tools", "常规接口", "api", "开放 API、Webhook、SDK 与文档索引。", 1),
-        ("tools", "独立站", "indie", "独立开发者产品与小而美站点。", 2),
-        ("tools", "设计资源", "design", "图标、字体、组件库与设计系统。", 3),
-        ("tools", "开发框架", "framework", "前后端框架与脚手架。", 4),
-        ("tools", "数据服务", "data", "公开数据集与分析面板。", 5),
-        ("demand", "供应", "supply", "可提供的产品、服务或产能。", 1),
-        ("demand", "求购", "buy", "明确预算与交付要求的采购信息。", 2),
-        ("demand", "合作", "coop", "联合运营、渠道与技术合作。", 3),
-        ("reports", "虚假宣传", "fake", "夸大承诺与无法兑现的案例摘要。", 1),
-        ("reports", "服务纠纷", "dispute", "履约争议公开记录。", 2),
-        ("utils", "格式转换", "convert", "文档与媒体格式转换入口。", 1),
-        ("utils", "站点检测", "check", "可用性与基础安全检测。", 2),
+        ("tools", "常规接口", "api", "开放 API、Webhook、SDK 与文档索引。适合对接内部系统和第三方服务。", 1),
+        ("tools", "独立站", "indie", "独立开发者产品与小而美站点，强调可自托管、可试用。", 2),
+        ("tools", "设计资源", "design", "图标、字体、组件库、设计系统与落地页模板。", 3),
+        ("tools", "开发框架", "framework", "前后端框架、脚手架与部署模板。", 4),
+        ("tools", "数据服务", "data", "公开数据集、报表面板与埋点方案。", 5),
+        ("tools", "协作办公", "collab", "文档、任务、会议纪要与知识库工具。", 6),
+        ("tools", "安全合规", "secure", "备份、权限、审计与基础安全检测。", 7),
+        ("demand", "供应", "supply", "可提供的产品、服务、设计或开发产能。", 1),
+        ("demand", "求购", "buy", "写清预算、交付物和截止时间的采购信息。", 2),
+        ("demand", "合作", "coop", "联合运营、渠道分发与技术合作。", 3),
+        ("demand", "外包项目", "outsource", "短期项目制需求，适合个人开发者与工作室。", 4),
+        ("reports", "虚假宣传", "fake", "夸大承诺、无法兑现的案例摘要，仅供参考。", 1),
+        ("reports", "服务纠纷", "dispute", "履约争议与售后问题公开记录。", 2),
+        ("reports", "跑路预警", "alert", "失联、拒不交付等风险提示，需人工复核。", 3),
+        ("utils", "格式转换", "convert", "文档、图片、字幕等格式转换入口。", 1),
+        ("utils", "站点检测", "check", "可用性、证书与基础安全检测。", 2),
+        ("utils", "文案模板", "tpl", "需求说明书、报价单、验收单模板。", 3),
+        ("utils", "计算小工具", "calc", "工期、报价系数与订阅成本估算。", 4),
     ]
     for parent_slug, name, slug, intro, order in children:
         db.execute(
@@ -154,72 +161,49 @@ def seed(db):
     cat = {r["slug"]: r["id"] for r in db.execute("SELECT id,slug FROM categories")}
     expire = (datetime.utcnow() + timedelta(days=180)).date().isoformat()
     listings = [
-        (
-            "巡航看板 · 数据监控套件",
-            cat["api"],
-            "supply",
-            "面向运营团队的实时看板，支持多数据源接入。",
-            "提供指标订阅、异常告警与周报导出。适合中小团队快速上线监控。",
-            "@ops_demo",
-            "https://example.com/dashboard",
-            "",
-            "approved",
-            1,
-        ),
-        (
-            "厅级内容分发服务",
-            cat["indie"],
-            "supply",
-            "图文与短视频分发排期工具，支持多渠道。",
-            "可按栏目自动排期，保留审核流。不承接违法内容。",
-            "@media_demo",
-            "https://example.com/media",
-            "",
-            "approved",
-            1,
-        ),
-        (
-            "灰软替代：开源投递助手",
-            cat["framework"],
-            "supply",
-            "开源表单与素材投递工具，可自托管。",
-            "完全本地部署，数据不出境。提供文档与二次开发接口。",
-            "@oss_demo",
-            "https://example.com/oss",
-            "",
-            "approved",
-            1,
-        ),
-        (
-            "平台履约担保说明（示例）",
-            cat["coop"],
-            "supply",
-            "仅作流程演示：资金走合规托管，不承诺收益。",
-            "本条为演示数据。真实业务需自行完成合规审查。",
-            "@guard_demo",
-            "https://example.com",
-            "",
-            "approved",
-            1,
-        ),
-        (
-            "求购：中小团队知识库搭建",
-            cat["buy"],
-            "demand",
-            "需要可私有化部署的文档站，预算面议。",
-            "要求支持 Markdown、权限分级与全文检索。",
-            "@buyer01",
-            "",
-            "",
-            "approved",
-            0,
-        ),
+        ("巡航看板 · 数据监控套件", cat["api"], "supply", "运营向实时看板，支持多数据源与周报。", "指标订阅、异常告警、权限分组。提供 14 天试用。", "@ops_demo", "https://example.com/dashboard", 1),
+        ("开放 Webhook 网关", cat["api"], "supply", "把内部事件转成标准 Webhook，带重试与签名。", "适合把旧系统接到飞书/钉钉/自建机器人。", "@hook_lab", "https://example.com/hook", 1),
+        ("发票识别 API", cat["api"], "supply", "增值税发票字段抽取，按次计费。", "支持 PDF/图片，回传 JSON，可私有化。", "@ocr_plus", "https://example.com/ocr", 0),
+        ("独立文档站生成器", cat["indie"], "supply", "把 Markdown 仓库变成带搜索的文档站。", "一键部署，支持版本切换与暗色主题。", "@docsmini", "https://example.com/docs", 1),
+        ("轻量预约页", cat["indie"], "supply", "给线下服务用的档期预约页，免登录。", "可导出日历，适合工作室与培训。", "@bookly", "https://example.com/book", 0),
+        ("个人作品集模板", cat["indie"], "supply", "设计师/开发者作品集，含案例页。", "静态导出，可挂自己的域名。", "@folio", "https://example.com/folio", 0),
+        ("图标与插画包 2026", cat["design"], "supply", "1200+ 线性图标，商用授权清晰。", "含 Figma 组件与 SVG 压缩包。", "@iconset", "https://example.com/icons", 1),
+        ("落地页组件库", cat["design"], "supply", "营销页模块：价格表、FAQ、对比表。", "适配主流前端框架，给源文件。", "@landkit", "https://example.com/land", 0),
+        ("中文字体搭配手册", cat["design"], "supply", "标题/正文配对示例与授权说明。", "在线预览，可下载对照表。", "@typecn", "https://example.com/type", 0),
+        ("Flask 后台脚手架", cat["framework"], "supply", "带登录、权限、CSV 导出的后台起点。", "MIT 协议，文档里有部署清单。", "@flaskkit", "https://example.com/flask", 1),
+        ("前端单体模板", cat["framework"], "supply", "列表+详情+筛选的管理台界面。", "只含静态页，方便接自己的 API。", "@adminui", "https://example.com/ui", 0),
+        ("公开行业数据集", cat["data"], "supply", "零售/招聘/物流脱敏样本，按月更新。", "CSV/Parquet，附字段字典。", "@opendata", "https://example.com/data", 1),
+        ("埋点方案白皮书", cat["data"], "supply", "事件命名规范与看板指标模板。", "适合 10 人以下产品团队。", "@trackspec", "https://example.com/track", 0),
+        ("团队知识库托管", cat["collab"], "supply", "私有化 Wiki，Markdown + 权限分级。", "支持全文检索与页面锁。", "@wikibox", "https://example.com/wiki", 1),
+        ("会议纪要助手", cat["collab"], "supply", "录音转文字并生成待办。", "仅作演示，不存储敏感音频。", "@meetnote", "https://example.com/meet", 0),
+        ("自动备份盒子", cat["secure"], "supply", "把站点文件和数据库定时打包装云盘。", "保留 30 天版本，失败发邮件。", "@bakbox", "https://example.com/bak", 1),
+        ("权限体检清单", cat["secure"], "supply", "检查后台账号、弱口令与过期密钥。", "输出 PDF 报告，给运维签字。", "@aclcheck", "https://example.com/acl", 0),
+        ("品牌官网改版供应", cat["supply"], "supply", "承接企业官网改版，含移动端。", "周期 3–6 周，提供信息架构稿。", "@studio_a", "https://example.com/studio", 1),
+        ("小程序页面开发档期", cat["supply"], "supply", "本月仍有 2 个档期，按页报价。", "不接金融与博彩类目。", "@mini_dev", "https://example.com/mini", 0),
+        ("求购：可私有化知识库", cat["buy"], "demand", "20 人团队，要权限和全文检索。", "预算面议，需提供演示环境。", "@buyer01", "", 1),
+        ("求购：数据看板外包", cat["buy"], "demand", "对接现有订单库，要周报邮件。", "希望 4 周内上线第一版。", "@buyer02", "", 0),
+        ("求购：设计系统整理", cat["buy"], "demand", "把散落组件收成 Figma 库。", "有现成页面可参考，要文档。", "@buyer03", "", 0),
+        ("渠道互推合作", cat["coop"], "coop", "工具类站点互换友情链接与联合活动。", "需提供真实 UV 区间，不买量。", "@partner01", "https://example.com/partner", 1),
+        ("内容共创计划", cat["coop"], "coop", "寻找垂直领域作者写评测。", "按篇结算，先看过往样本。", "@editor01", "", 0),
+        ("外包：报名页 3 天交付", cat["outsource"], "demand", "活动报名+审核名单导出。", "提供设计稿，不要后台太复杂。", "@event01", "", 0),
+        ("外包：旧站迁移备案", cat["outsource"], "demand", "静态站迁到新域名并保留链接。", "要 301 清单和验收表。", "@migrate01", "", 0),
+        ("某平台承诺「稳赚」未兑现", cat["fake"], "report", "宣传保本，实际无法提现。摘要存档。", "请自行核验，本站不构成指控。保留对话截图再投诉。", "@editor", "", 0),
+        ("改版项目拖期两个月", cat["dispute"], "report", "验收标准争议，双方各执一词。", "建议合同写清里程碑付款。", "@editor", "", 0),
+        ("供应商失联预警（演示）", cat["alert"], "report", "约定交付日后连续失联。", "演示数据。真实预警需后台复核。", "@editor", "", 0),
+        ("Markdown ↔ Word 转换", cat["convert"], "supply", "保留标题层级和表格。", "浏览器内转换，文件不上传服务器。", "@cvt01", "https://example.com/md", 0),
+        ("图片批量压缩", cat["convert"], "supply", "按目标体积压缩 JPG/PNG。", "适合落地页配图。", "@cvt02", "https://example.com/img", 0),
+        ("证书与 HTTPS 检测", cat["check"], "supply", "查过期时间和跳转是否正确。", "输出简单报告，可定期扫。", "@chk01", "https://example.com/ssl", 0),
+        ("死链抽查", cat["check"], "supply", "按站点地图抽查 200 个链接。", "适合改版后验收。", "@chk02", "https://example.com/link", 0),
+        ("需求说明书模板", cat["tpl"], "supply", "含范围、验收、不做什么。", "可直接改成自己的项目。", "@tpl01", "", 1),
+        ("验收单模板", cat["tpl"], "supply", "功能点打勾 + 签字栏。", "减少口头验收纠纷。", "@tpl02", "", 0),
+        ("工期估算表", cat["calc"], "supply", "按页面数和接口数估人天。", "仅供参考，复杂需求另算。", "@calc01", "", 0),
+        ("订阅成本对照", cat["calc"], "supply", "把年付/月付工具摊到人月。", "适合小团队做工具盘点。", "@calc02", "", 0),
     ]
-    for t, cid, kind, summary, body, contact, site, logo, status, feat in listings:
+    for t, cid, kind, summary, body, contact, site, feat in listings:
         db.execute(
             """INSERT INTO listings(title,category_id,kind,summary,body,contact,website,logo,status,featured,expire_at,author_id,created_at)
                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (t, cid, kind, summary, body, contact, site, logo, status, feat, expire, 2, now),
+            (t, cid, kind, summary, body, contact, site, "", "approved", feat, expire, 2, now),
         )
     ads = [
         ("顶栏广告 A", "https://placehold.co/580x70/2563eb/fff?text=Banner+A", "#", "home_banner", 1, 1),
@@ -242,8 +226,8 @@ def seed(db):
             now,
         ),
     )
-    db.execute("INSERT INTO settings(key,value) VALUES(?,?)", ("site_name", "收录站 Demo"))
-    db.execute("INSERT INTO settings(key,value) VALUES(?,?)", ("site_tagline", "让好资源被长期看见"))
+    db.execute("INSERT INTO settings(key,value) VALUES(?,?)", ("site_name", "看见收录"))
+    db.execute("INSERT INTO settings(key,value) VALUES(?,?)", ("site_tagline", "工具 · 供需 · 模板 · 人工审核"))
     db.commit()
 
 
@@ -297,21 +281,27 @@ def inject():
     }
 
 
+def listing_query(db, extra="", args=(), limit=12):
+    sql = f"""SELECT l.*, c.name AS cat_name, c.slug AS cat_slug FROM listings l
+              LEFT JOIN categories c ON c.id=l.category_id
+              WHERE l.status='approved' {extra}
+              ORDER BY l.featured DESC, l.id DESC LIMIT {int(limit)}"""
+    return db.execute(sql, args).fetchall()
+
+
 @app.route("/")
 def index():
     db = get_db()
     banners = db.execute(
         "SELECT * FROM ads WHERE position='home_banner' AND active=1 ORDER BY sort_order"
     ).fetchall()
-    featured = db.execute(
-        """SELECT l.*, c.name AS cat_name FROM listings l
-           LEFT JOIN categories c ON c.id=l.category_id
-           WHERE l.status='approved' AND l.featured=1
-           ORDER BY l.id DESC LIMIT 8"""
-    ).fetchall()
+    featured = listing_query(db, "AND l.featured=1", limit=8)
+    latest = listing_query(db, limit=10)
+    supplies = listing_query(db, "AND l.kind='supply'", limit=8)
+    demands = listing_query(db, "AND l.kind IN ('demand','coop')", limit=8)
+    reports = listing_query(db, "AND l.kind='report'", limit=6)
     tools_parent = db.execute("SELECT * FROM categories WHERE slug='tools'").fetchone()
-    tool_cats = []
-    tool_listings = []
+    tool_cats, tool_listings, current = [], [], None
     if tools_parent:
         tool_cats = db.execute(
             "SELECT * FROM categories WHERE parent_id=? ORDER BY sort_order",
@@ -320,25 +310,32 @@ def index():
         current_slug = request.args.get("cat") or (tool_cats[0]["slug"] if tool_cats else None)
         current = next((c for c in tool_cats if c["slug"] == current_slug), tool_cats[0] if tool_cats else None)
         if current:
-            tool_listings = db.execute(
-                """SELECT l.*, c.name AS cat_name FROM listings l
-                   JOIN categories c ON c.id=l.category_id
-                   WHERE l.status='approved' AND (l.category_id=? OR c.parent_id=?)
-                   ORDER BY l.id DESC LIMIT 24""",
+            tool_listings = listing_query(
+                db,
+                "AND (l.category_id=? OR c.parent_id=?)",
                 (current["id"], current["id"]),
-            ).fetchall()
-    else:
-        current = None
+                20,
+            )
+    counts = {
+        "all": db.execute("SELECT COUNT(*) FROM listings WHERE status='approved'").fetchone()[0],
+        "cats": db.execute("SELECT COUNT(*) FROM categories").fetchone()[0],
+        "pending": db.execute("SELECT COUNT(*) FROM listings WHERE status='pending'").fetchone()[0],
+    }
     notice = db.execute("SELECT * FROM notices WHERE active=1 ORDER BY id DESC LIMIT 1").fetchone()
     return render_template(
         "index.html",
         banners=banners,
         featured=featured,
+        latest=latest,
+        supplies=supplies,
+        demands=demands,
+        reports=reports,
         tool_cats=tool_cats,
         tool_listings=tool_listings,
         current_cat=current,
         notice=notice,
         tools_parent=tools_parent,
+        counts=counts,
     )
 
 
@@ -376,7 +373,16 @@ def item_detail(item_id):
     ).fetchone()
     if not item or (item["status"] != "approved" and (not current_user() or current_user()["role"] != "admin")):
         abort(404)
-    return render_template("detail.html", item=item)
+    related = []
+    if item["category_id"]:
+        related = db.execute(
+            """SELECT l.*, c.name AS cat_name, c.slug AS cat_slug FROM listings l
+               LEFT JOIN categories c ON c.id=l.category_id
+               WHERE l.status='approved' AND l.category_id=? AND l.id!=?
+               ORDER BY l.id DESC LIMIT 4""",
+            (item["category_id"], item["id"]),
+        ).fetchall()
+    return render_template("detail.html", item=item, related=related)
 
 
 @app.route("/search")
@@ -628,6 +634,28 @@ def admin_notices():
         return redirect(url_for("admin_notices"))
     rows = db.execute("SELECT * FROM notices ORDER BY id DESC").fetchall()
     return render_template("admin/notices.html", rows=rows)
+
+
+@app.route("/admin/reload-demo", methods=["POST"])
+@admin_required
+def admin_reload_demo():
+    """清空业务数据并重新写入加厚演示内容。账号保留。"""
+    db = get_db()
+    db.execute("DELETE FROM listings")
+    db.execute("DELETE FROM ads")
+    db.execute("DELETE FROM notices")
+    db.execute("DELETE FROM categories")
+    db.execute("DELETE FROM settings")
+    db.commit()
+    db.close()
+    g.pop("db", None)
+    raw = sqlite3.connect(DB_PATH)
+    raw.row_factory = sqlite3.Row
+    seed(raw)
+    raw.commit()
+    raw.close()
+    flash("演示内容已重新载入，请刷新前台", "ok")
+    return redirect(url_for("admin_home"))
 
 
 @app.route("/admin/settings", methods=["GET", "POST"])

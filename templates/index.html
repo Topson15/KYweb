@@ -1,37 +1,41 @@
 {% extends "base.html" %}
 {% block body %}
+{% if notice %}
+<div class="notice-bar">
+  <strong>{{ notice.title }}</strong>
+  <span>{{ notice.body.split('\n')[0] }}</span>
+</div>
+{% endif %}
+
 <section class="banners">
   {% for ad in banners %}
     <a class="banner" href="{{ ad.link_url }}"><img src="{{ ad.image_url }}" alt="{{ ad.title }}"></a>
   {% endfor %}
 </section>
-<p class="disclaimer">此处为付费展示位，不对交易结果负责。供需请走审核流程。</p>
+<p class="disclaimer">横幅为付费展示位，不代表本站对交易结果负责。供需条目需审核后展示。</p>
 
-<section class="grid4">
-  {% for item in featured %}
-    <article class="card">
-      <div class="card-h">
-        <div class="thumb">{{ item.title[:1] }}</div>
-        <div>
-          <a href="{{ url_for('item_detail', item_id=item.id) }}"><strong>{{ item.title }}</strong></a>
-          <p class="meta">分类：{{ item.cat_name or '未分组' }} · {{ item.kind }}
-            {% if item.expire_at %} · 有效至 {{ item.expire_at }}{% endif %}</p>
-        </div>
-        <span class="tag">{{ '供应' if item.kind=='supply' else '需求' }}</span>
-      </div>
-      <p class="sum">{{ item.summary }}</p>
-      <a class="more" href="{{ url_for('item_detail', item_id=item.id) }}">显示更多</a>
-      <time>{{ item.created_at }}</time>
-    </article>
-  {% endfor %}
+<div class="stats-line">
+  <span>已收录 <b>{{ counts.all }}</b> 条</span>
+  <span>分类 <b>{{ counts.cats }}</b></span>
+  <span>待审 <b>{{ counts.pending }}</b></span>
+</div>
+
+<section>
+  <div class="panel-h">
+    <h2>置顶推荐</h2>
+    <a class="more" href="{{ url_for('category', slug='tools') }}">查看全部分类</a>
+  </div>
+  <div class="grid4">
+    {% for item in featured %}
+      {% include "partials/card.html" %}
+    {% endfor %}
+  </div>
 </section>
 
 <section class="panel">
   <div class="panel-h">
-    <h2>{{ tools_parent.name if tools_parent else '分类浏览' }}</h2>
-    <div>
-      <a class="btn ghost" href="{{ url_for('submit') }}">申请收录</a>
-    </div>
+    <h2>{{ tools_parent.name if tools_parent else '工具合集' }}</h2>
+    <a class="btn ghost" href="{{ url_for('submit') }}">申请收录</a>
   </div>
   {% if current_cat and current_cat.intro %}
     <div class="intro">{{ current_cat.intro }}</div>
@@ -43,8 +47,8 @@
     {% endfor %}
   </div>
   <div class="chips">
-    {% for p, kids in nav_children.items() %}
-      {% for c in kids %}
+    {% for p in nav_parents %}
+      {% for c in nav_children[p.id] %}
         <a class="chip" href="{{ url_for('category', slug=c.slug) }}">{{ c.name }}</a>
       {% endfor %}
     {% endfor %}
@@ -53,11 +57,47 @@
     {% for item in tool_listings %}
       <a class="row" href="{{ url_for('item_detail', item_id=item.id) }}">
         <span>{{ item.title }}</span>
-        <em>{{ item.cat_name }}</em>
+        <em>{{ item.cat_name }} · {{ item.kind }}</em>
       </a>
     {% else %}
       <p class="empty">该二级分类暂无已审核条目。</p>
     {% endfor %}
   </div>
+</section>
+
+<div class="split">
+  <section class="panel">
+    <div class="panel-h"><h2>供应</h2><a href="{{ url_for('category', slug='supply') }}">更多</a></div>
+    {% for item in supplies %}
+      <a class="row" href="{{ url_for('item_detail', item_id=item.id) }}"><span>{{ item.title }}</span><em>{{ item.cat_name }}</em></a>
+    {% endfor %}
+  </section>
+  <section class="panel">
+    <div class="panel-h"><h2>求购 / 合作</h2><a href="{{ url_for('category', slug='buy') }}">更多</a></div>
+    {% for item in demands %}
+      <a class="row" href="{{ url_for('item_detail', item_id=item.id) }}"><span>{{ item.title }}</span><em>{{ item.cat_name }}</em></a>
+    {% endfor %}
+  </section>
+</div>
+
+<section class="panel">
+  <div class="panel-h"><h2>曝光专栏</h2><a href="{{ url_for('category', slug='reports') }}">更多</a></div>
+  <div class="grid3">
+    {% for item in reports %}
+      {% include "partials/card.html" %}
+    {% else %}
+      <p class="empty">暂无曝光摘要</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-h"><h2>最新收录</h2></div>
+  {% for item in latest %}
+    <a class="row" href="{{ url_for('item_detail', item_id=item.id) }}">
+      <span>{{ item.title }}</span>
+      <em>{{ item.created_at }}</em>
+    </a>
+  {% endfor %}
 </section>
 {% endblock %}

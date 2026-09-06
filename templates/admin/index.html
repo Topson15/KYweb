@@ -17,4 +17,8 @@
 {% else %}
   <p class="empty">没有待审条目</p>
 {% endfor %}
+<form method="post" action="{{ url_for('admin_reload_demo') }}" onsubmit="return confirm('将清空分类/条目/广告并写入加厚演示数据，账号保留。确定？')">
+  <p class="hint">已经跑过旧版数据库的，点下面按钮才能看到加厚内容。</p>
+  <button class="btn" type="submit">重新载入加厚演示内容</button>
+</form>
 {% endblock %}

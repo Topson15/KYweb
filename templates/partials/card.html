@@ -1,0 +1,13 @@
+<article class="card">
+  <div class="card-h">
+    <div class="thumb">{{ item.title[:1] }}</div>
+    <div>
+      <a href="{{ url_for('item_detail', item_id=item.id) }}"><strong>{{ item.title }}</strong></a>
+      <p class="meta">{{ item.cat_name or '未分组' }}
+        {% if item.expire_at %} · 至 {{ item.expire_at }}{% endif %}</p>
+    </div>
+    <span class="tag">{{ item.kind }}</span>
+  </div>
+  <p class="sum">{{ item.summary }}</p>
+  <a class="more" href="{{ url_for('item_detail', item_id=item.id) }}">查看详情</a>
+</article>
